@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A little countdown for you 🎂</title>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg1:#ffe3ee;--bg2:#fff1dc;--card:#ffffffcc;--ink:#6b2c4a;--pink:#ff6fa5;--soft:#ffd0e2;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg1:#3a1530;--bg2:#2d1a2e;--card:#4a2440cc;--ink:#ffe3ee;--soft:#7a3a62}}
+*{box-sizing:border-box}
+html{height:100%}
+body{margin:0;min-height:100%;font-family:'Quicksand',system-ui,sans-serif;color:var(--ink);background:linear-gradient(160deg,var(--bg1),var(--bg2));text-align:center;overflow-x:hidden}
+.script{font-family:'Pacifico',cursive,serif}
+main{max-width:640px;margin:0 auto;padding:28px 18px 60px;position:relative;z-index:2}
+h1{font-size:2.1rem;margin:10px 0 4px;color:var(--pink)}
+.sub{margin:0 0 22px;opacity:.85}
+.timer{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+.box{background:var(--card);border-radius:20px;padding:14px 4px;box-shadow:0 6px 18px #ff6fa533}
+.box b{display:block;font-size:2rem;color:var(--pink)}
+.box span{font-size:.8rem;text-transform:uppercase;letter-spacing:1px}
+.note{background:var(--card);border-radius:22px;padding:20px;margin:22px 0;box-shadow:0 6px 18px #ff6fa533;font-size:1.1rem;line-height:1.5}
+.tag{display:inline-block;background:var(--soft);border-radius:99px;padding:4px 14px;font-size:.8rem;margin-bottom:8px}
+.photos{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}
+.ph{aspect-ratio:3/4;border-radius:18px;border:4px solid #fff;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:2.4rem;box-shadow:0 6px 14px #0002;overflow:hidden;transform:rotate(-3deg)}
+.ph:nth-child(2){transform:rotate(2deg)}.ph:nth-child(3){transform:rotate(-1deg)}
+.ph img{width:100%;height:100%;object-fit:cover}
+.wishes{list-style:none;padding:0;margin:0;text-align:left}
+.wishes li{margin:10px 0;padding-left:6px}
+.balloon{position:fixed;bottom:-120px;width:44px;height:56px;border-radius:50% 50% 48% 48%;opacity:.7;z-index:1;animation:rise linear infinite}
+.balloon::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:40px;background:#c9a;opacity:.6}
+@keyframes rise{to{transform:translateY(-125vh) rotate(8deg)}}
+canvas{position:fixed;inset:0;pointer-events:none;z-index:3}
+.hide{display:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<main>
+  <section id="wait">
+    <div style="font-size:2.6rem">🎈🎂🎈</div>
+    <h1 class="script">Something special is coming…</h1>
+    <p class="sub">Hey <span class="nm"></span> 💖 the countdown to your day has begun!</p>
+    <div class="timer">
+      <div class="box"><b id="d">0</b><span>days</span></div>
+      <div class="box"><b id="h">0</b><span>hours</span></div>
+      <div class="box"><b id="m">0</b><span>mins</span></div>
+      <div class="box"><b id="s">0</b><span>secs</span></div>
+    </div>
+    <div class="note"><div class="tag" id="tag"></div><div id="daily"></div></div>
+    <p class="sub">Come back tomorrow for a new surprise 🌸</p>
+  </section>
+
+  <section id="party" class="hide">
+    <div style="font-size:2.6rem">🎉🎂🎉</div>
+    <h1 class="script" style="font-size:2.6rem">Happy Birthday,<br><span class="nm"></span>!</h1>
+    <p class="sub">9th November · your day is finally here ✨</p>
+    <div class="photos" id="photos"></div>
+    <div class="note">
+      <ul class="wishes">
+        <li>🌷 May your day be as sweet and bright as your smile.</li>
+        <li>🎁 You deserve every happy thing the world has to give.</li>
+        <li>💫 Thank you for being you. We’re so lucky to have you!</li>
+        <li>🍰 Eat the cake, make a wish, and enjoy every moment.</li>
+      </ul>
+    </div>
+    <p class="script" style="font-size:1.4rem;color:var(--pink)">With lots of love 💕</p>
+  </section>
+</main>
+
+<script>
+// ---- EDIT THESE ----
+const NAME = "Her Name";
+const PHOTOS = []; // add photos as data: URIs (I can embed them for you)
+const TARGET = new Date(2026, 10, 9, 0, 0, 0); // 9 Nov 2026, local time
+const DAILY = {
+  8:"Only 8 days to go! Somebody’s about to get very spoiled 🎀",
+  7:"7 days left. A cake is already getting nervous 🍰",
+  6:"6 days! Reminder: you are loved more than all the Diwali sweets 🪔",
+  5:"5 days to go. Start thinking of your wish ⭐",
+  4:"4 days left. The balloons are practicing 🎈",
+  3:"3 days! Your gift is on its way 🎁",
+  2:"2 days to go. Keep your smile ready, we’re celebrating you 💖",
+  1:"Just 1 more sleep! Tomorrow is YOUR day 🥳"
+};
+// --------------------
+const $ = id => document.getElementById(id);
+document.querySelectorAll('.nm').forEach(e => e.textContent = NAME);
+const colors = ['#ff6fa5','#ffb3d1','#ffd166','#9be7ff','#c3a6ff','#ffa07a'];
+for (let i=0;i<9;i++){
+  const b=document.createElement('div'); b.className='balloon';
+  b.style.left=(i*11+3)+'%'; b.style.background=colors[i%6];
+  b.style.animationDuration=(12+i*1.7)+'s'; b.style.animationDelay=(-i*2.3)+'s';
+  document.body.appendChild(b);
+}
+const photos=$('photos');
+for (let i=0;i<3;i++){
+  const d=document.createElement('div'); d.className='ph';
+  if (PHOTOS[i]) { const im=document.createElement('img'); im.src=PHOTOS[i]; d.appendChild(im); }
+  else d.textContent=['📸','💕','🌸'][i];
+  photos.appendChild(d);
+}
+let confettiOn=false;
+function confetti(){
+  if(confettiOn) return; confettiOn=true;
+  const c=$('c'),x=c.getContext('2d');
+  const fit=()=>{c.width=innerWidth;c.height=innerHeight}; fit(); addEventListener('resize',fit);
+  const ps=Array.from({length:110},()=>({x:Math.random()*c.width,y:Math.random()*-c.height,r:4+Math.random()*5,v:1.5+Math.random()*3,w:Math.random()*2-1,k:colors[Math.floor(Math.random()*6)]}));
+  (function f(){
+    x.clearRect(0,0,c.width,c.height);
+    ps.forEach(p=>{p.y+=p.v;p.x+=p.w;if(p.y>c.height){p.y=-10;p.x=Math.random()*c.width}x.fillStyle=p.k;x.fillRect(p.x,p.y,p.r,p.r*1.6)});
+    requestAnimationFrame(f);
+  })();
+}
+function tick(){
+  const now=new Date(), diff=TARGET-now;
+  const preview = location.hash==='#birthday';
+  if (diff<=0 || preview){
+    $('wait').classList.add('hide'); $('party').classList.remove('hide'); confetti(); return;
+  }
+  $('wait').classList.remove('hide'); $('party').classList.add('hide');
+  const s=Math.floor(diff/1000);
+  $('d').textContent=Math.floor(s/86400);
+  $('h').textContent=Math.floor(s%86400/3600);
+  $('m').textContent=Math.floor(s%3600/60);
+  $('s').textContent=s%60;
+  const left=Math.ceil(diff/86400000);
+  $('tag').textContent='Today’s little note';
+  $('daily').textContent=DAILY[left]||'The countdown has begun! 💌';
+}
+tick(); setInterval(tick,1000); addEventListener('hashchange',tick);
+</script>
+</body>
+</html>
